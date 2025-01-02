@@ -44,11 +44,21 @@ elif menu == "자동차 Top 5 정보":
 
     if "🚨" not in raw_data:
         car_data = parse_car_data(raw_data)
-        if car_data:
-            df = pd.DataFrame(car_data)
+
+        # 데이터를 브랜드별로 그룹화
+        grouped_data = {}
+        for entry in car_data:
+            brand = entry["브랜드"]
+            if brand not in grouped_data:
+                grouped_data[brand] = []
+            grouped_data[brand].append({"정보": entry["정보"], "내용": entry["내용"]})
+
+        # 브랜드별로 테이블 출력
+        for brand, details in grouped_data.items():
+            st.markdown(f"### {brand}")
+            df = pd.DataFrame(details)
             st.table(df)
-            st.success("데이터를 성공적으로 정리했습니다!")
-        else:
-            st.error("데이터를 정리하는 데 실패했습니다.")
+
+        st.success("브랜드별 테이블을 성공적으로 생성했습니다!")
     else:
         st.error("데이터를 가져오는 데 실패했습니다.")
