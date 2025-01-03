@@ -39,13 +39,12 @@ elif menu == "사고 추이 분석":
     st.write("자동차 수요 증가에 따른 사고 발생 현황 분석")
 
 elif menu == "자동차 Top 5 정보":
-    st.markdown('<div class="title">🏆 국내 자동차 Top 5 정보</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subheader">🏆 국내 자동차 Top 5 정보</div>', unsafe_allow_html=True)
     raw_data = get_top_5_cars()
 
     if "🚨" not in raw_data:
         car_data = parse_car_data(raw_data)
 
-        # 데이터를 브랜드별로 그룹화
         grouped_data = {}
         for entry in car_data:
             brand = entry["브랜드"]
@@ -53,7 +52,6 @@ elif menu == "자동차 Top 5 정보":
                 grouped_data[brand] = []
             grouped_data[brand].append({"정보": entry["정보"], "내용": entry["내용"]})
 
-        # 브랜드별로 테이블 출력
         for brand, details in grouped_data.items():
             st.markdown(f"### {brand}")
             df = pd.DataFrame(details)

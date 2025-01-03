@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import re
 
 
 def parse_car_data(raw_data):
@@ -15,7 +16,6 @@ def parse_car_data(raw_data):
     }
 
     current_brand = None
-
     for line in lines:
         line = line.strip()
 
@@ -29,10 +29,19 @@ def parse_car_data(raw_data):
                 if key in line:
                     if key == "대표 모델":
                         detail = line.split(":")[-1].strip()
+                    elif key == "홈페이지":
+                        urls = re.findall(r'https?://[^\s]+', line)
+                        if urls:
+                            detail = urls[0]
+                            if "kia.com" in detail:
+                                continue
+                        else:
+                            continue
                     else:
                         detail = line.replace("■", "").strip()
-                    car_data.append({"브랜드": current_brand, "정보": key, "내용": detail})
 
+                    if not any(d['정보'] == key and d['내용'] == detail and d['브랜드'] == current_brand for d in car_data):
+                        car_data.append({"브랜드": current_brand, "정보": key, "내용": detail})
     return car_data
 
 
