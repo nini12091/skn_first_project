@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-def load_excel(sheet_name: str, file_name: str = "hundae.xlsx", header: int = 2):
+def load_excel(sheet_name: str, file_name: str = "hyundai_demand.xlsx", header: int = 2):
 
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     file_path = os.path.join(project_root, "data", "raw", file_name)

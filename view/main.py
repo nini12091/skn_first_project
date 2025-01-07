@@ -1,8 +1,9 @@
+import os
+import sys
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(project_root)
+
 import streamlit as st
-import web_page.registration as registration
-import web_page.demand as demand
-import web_page.faq as faq
-import web_page.home as home
 
 # 페이지 기본 설정
 st.set_page_config(
@@ -10,6 +11,11 @@ st.set_page_config(
     page_icon="🚗",
     layout="wide"
 )
+
+import web_page.registration as registration
+import web_page.demand as demand
+import web_page.faq as faq
+import web_page.home as home
 
 # 사이드바 메뉴
 st.sidebar.title("📂 MENU")
