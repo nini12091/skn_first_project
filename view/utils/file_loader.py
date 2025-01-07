@@ -1,12 +1,16 @@
 import os
+import sys
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(project_root)
+
+import os
 import pandas as pd
 import streamlit as st
+import mysql.connector
 
 def load_excel(sheet_name: str, file_name: str = "hyundai_demand.xlsx", header: int = 2):
 
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     file_path = os.path.join(project_root, "data", "raw", file_name)
-
     try:
         data = pd.read_excel(file_path, sheet_name=sheet_name, header=header)
         return data
