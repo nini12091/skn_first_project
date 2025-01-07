@@ -1,17 +1,12 @@
-import os
-import sys
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-sys.path.append(project_root)
-
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import time
+from selenium import webdriver
 import csv
+import time
 
 chrome_options = Options()
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
@@ -19,55 +14,88 @@ driver.get("https://www.hyundai.com/kr/ko/e/customer/center/faq")
 
 time.sleep(3)
 
-output_file = "data.raw.hyundai_faq_data.csv"
-with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(["Category", "Question", "Answer"])
+try:
+    with open("../../data/raw/hyundai_faq.csv", mode="w", encoding="utf-8", newline="") as file:
+        writer = csv.writer(file)
 
-    try:
-        categories = driver.find_elements(By.CSS_SELECTOR, "ul.tab-menu__icon-wrapper > li")
-        print(f"Found {len(categories)} categories.")
+        # CSV 파일 헤더 작성
+        writer.writerow(["Brand", "Category", "Question", "Answer"])
 
-        for category_index, category in enumerate(categories):
-            category_name = category.text.strip()
-            print(f"\nClicking on category {category_index + 1}/{len(categories)}: {category_name}")
+        # 카테고리 버튼 탐색
+        list_elements = driver.find_elements(By.CSS_SELECTOR, "ul.tab-menu__icon-wrapper > li > button")
 
-            driver.execute_script("arguments[0].click();", category)
-            time.sleep(3)
+        for index, element in enumerate(list_elements):
+            category_name = element.text.strip()
+            print(f"Clicking on category {index + 1}: {category_name}")
 
+            # 카테고리 클릭
+            driver.execute_script("arguments[0].scrollIntoView(true);", element)  # 스크롤
+            time.sleep(1)
+            driver.execute_script("arguments[0].click();", element)  # 클릭
+
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "button.active"))
+            )
+
+            # 페이지를 1로 초기화 (첫 페이지로 이동)
             try:
-                questions = WebDriverWait(driver, 10).until(
-                    EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.list-wrap > div"))
+                first_page_button = driver.find_element(By.CSS_SELECTOR, "ul.el-pager li.number:first-child button")
+                driver.execute_script("arguments[0].click();", first_page_button)
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "div.list-item"))
                 )
-                print(f"Found {len(questions)} questions in category '{category_name}'.")
-
-                for question_index, question in enumerate(questions):
-
-                    question_button = question.find_element(By.CSS_SELECTOR, "button.list-title")
-                    question_text = question_button.text.strip()
-
-                    driver.execute_script("arguments[0].click();", question_button)
-                    time.sleep(2)
-
-                    try:
-                        answer = WebDriverWait(driver, 10).until(
-                            EC.presence_of_element_located((By.CSS_SELECTOR, "div.conts"))
-                        ).text.strip()
-                    except Exception as e:
-                        answer = "No answer found"
-
-                    print(f"  ({question_index + 1}/{len(questions)}) Question: {question_text}")
-                    print(f"      Answer: {answer}")
-
-                    writer.writerow([category_name, question_text, answer])
-
+                time.sleep(2)
             except Exception as e:
-                print(f"No questions found in category '{category_name}': {e}")
+                print(f"Failed to reset to the first page: {e}")
 
-    except Exception as e:
-        print(f"Error while processing the FAQ page: {e}")
+            # 페이지네이션 처리
+            while True:
+                try:
+                    # 현재 페이지에서 FAQ 아이템 추출
+                    faq_items = driver.find_elements(By.CSS_SELECTOR, "div.list-item")
+                    for faq_item in faq_items:
+                        try:
+                            question_element = faq_item.find_element(By.CSS_SELECTOR, "div.title")
+                            question = question_element.text.strip() if question_element else "No question found"
 
-    finally:
-        driver.quit()
+                            # 답변 펼치기
+                            driver.execute_script("arguments[0].click();", question_element)
+                            time.sleep(1)
 
-print(f"FAQ data has been saved to '{output_file}'.")
+                            answer_element = faq_item.find_element(By.CSS_SELECTOR, "div.conts")
+                            answer = answer_element.text.strip() if answer_element else "No answer found"
+
+                            print(f"Extracted - Brand: hyundai, Category: {category_name}, Question: {question}, Answer: {answer}")
+
+                            # 데이터 저장
+                            writer.writerow(["hyundai", category_name, question, answer])
+                        except Exception as e:
+                            print(f"Failed to extract question/answer: {e}")
+
+                    # 페이지네이션 버튼 새로 가져오기
+                    pagination_buttons = driver.find_elements(By.CSS_SELECTOR, "ul.el-pager li.number button")
+
+                    # 현재 활성화된 페이지 탐색
+                    active_page_index = driver.find_element(By.CSS_SELECTOR, "ul.el-pager li.number.active button").text.strip()
+
+                    # 다음 페이지가 있는지 확인
+                    if int(active_page_index) < len(pagination_buttons):
+                        # 다음 페이지 클릭
+                        next_button = pagination_buttons[int(active_page_index)]  # 현재 페이지는 0부터 시작
+                        driver.execute_script("arguments[0].click();", next_button)
+                        WebDriverWait(driver, 10).until(
+                            EC.presence_of_element_located((By.CSS_SELECTOR, "div.list-item"))
+                        )
+                        time.sleep(2)
+                    else:
+                        break  # 더 이상 페이지 없음
+                except Exception as e:
+                    print(f"Failed to navigate pagination: {e}")
+                    break
+
+except Exception as e:
+    print(f"Error while processing the list: {e}")
+
+finally:
+    driver.quit()
+    print("Scraping completed and saved to hyundai_faq.csv.")

@@ -15,7 +15,7 @@ connection = mysql.connector.connect(
 )
 
 cursor = connection.cursor()
-csv_file = os.path.join(project_root, "data", "raw", "hyundai_faq_data.csv")
+csv_file = os.path.join(project_root, "data", "raw", "hyundai_faq.csv")
 brand_name = "hyundai"
 
 with open(csv_file, "r", encoding="utf-8") as file:
